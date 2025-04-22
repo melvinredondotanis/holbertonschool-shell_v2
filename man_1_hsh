@@ -1,0 +1,24 @@
+.TH man_1_hsh 1 "2025" "Holberton School" "General Commands Manual"
+
+.SH NAME
+hsh \- A simple shell for executing commands
+
+.SH SYNOPSIS
+hsh
+.RB [command]
+
+.SH DESCRIPTION
+This project is a simple shell implementation for Holberton School. It serves as a UNIX command interpreter, replicating some functionalities of the simple shell `sh`. It allows users to execute commands, navigate directories, and handle input/output redirection. The shell supports both interactive and non-interactive modes, providing a convenient and efficient way to interact with the underlying operating system.
+
+.SH USAGE
+To use the hsh, open a terminal and run the 'hsh' command.
+
+.SH BUGS
+No known bugs at this time.
+
+.SH SEE ALSO
+.BR sh (1),
+.BR bash (1).
+
+.SH AUTHOR
+Written by Melvin Redondo--Tanis.
