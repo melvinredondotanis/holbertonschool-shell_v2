@@ -1,0 +1,58 @@
+# Custom binary files
+hsh
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# Editor files
+*~
+.*.swp
+.*.swo
+
+# Build directories
+build/
+bin/
+obj/
+
+# Dependencies
+.depend
+.deps/
+
+# Precompiled Headers
+*.gch
+*.pch
