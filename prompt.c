@@ -48,25 +48,27 @@ void *free_prompt(void *prmt)
  *
  * Return: 0 on success, -1 on failure
  */
-void get_prompt(prompt_t *prmt)
+int get_prompt(prompt_t *prmt)
 {
-	size_t len = 0;
-	ssize_t read;
+	size_t bufsize = 0;
+	ssize_t characters;
 
-	if (isatty(STDIN_FILENO))
-		write(STDOUT_FILENO, "$ ", 2);
-
-	read = getline(&prmt->input, &len, stdin);
-	if (read == -1)
+	if (prmt->input)
 	{
-		if (errno == 0)
-		{
-			free_prompt(prmt);
-			exit(EXIT_SUCCESS);
-		}
-		perror("getline");
-		free_prompt(prmt);
-		exit(EXIT_FAILURE);
+		free(prmt->input);
+		prmt->input = NULL;
 	}
-	prmt->size = read;
+
+	printf("$ ");
+	fflush(stdout);
+	characters = getline(&(prmt->input), &bufsize, stdin);
+
+	if (characters == -1)
+		return (-1);
+
+	if (characters > 0 && prmt->input[characters - 1] == '\n')
+		prmt->input[characters - 1] = '\0';
+
+	prmt->size = strlen(prmt->input);
+	return (0);
 }

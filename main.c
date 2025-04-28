@@ -9,32 +9,43 @@
 int main(int argc, char **argv)
 {
 	(void)argc;
+	(void)argv;
 	int status = 0;
-	unsigned int nb_commands = 0;
 	prompt_t *prmt = init_prompt();
 
 	if (!isatty(STDIN_FILENO))
 	{
-		prmt->input = strdup(argv[0]);
-		if (!prmt->input)
+		size_t bufsize = 0;
+		ssize_t characters = getline(&(prmt->input), &bufsize, stdin);
+
+		if (characters == -1)
 		{
-			perror("strdup");
 			free_prompt(prmt);
 			return (1);
 		}
+
+		if (characters > 0 && prmt->input[characters - 1] == '\n')
+			prmt->input[characters - 1] = '\0';
+
 		prmt->size = strlen(prmt->input);
-		status = printf("Command %u: %s\n", nb_commands, prmt->input);
+		status = interpret_command(prmt);
 		free_prompt(prmt);
 		return (status);
 	}
 
 	while (1)
 	{
-		get_prompt(prmt);
-		nb_commands++;
-		status = printf("Command %u: %s", nb_commands, prmt->input);
-	}
-	free_prompt(prmt);
+		if (get_prompt(prmt) == -1)
+		{
+			if (isatty(STDIN_FILENO))
+				printf("\n");
+			break;
+		}
 
+		if (prmt->input && *(prmt->input))
+			status = interpret_command(prmt);
+	}
+
+	free_prompt(prmt);
 	return (status);
 }

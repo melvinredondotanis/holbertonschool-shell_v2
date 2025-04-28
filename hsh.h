@@ -1,13 +1,14 @@
 #ifndef HSH_H
 #define HSH_H
 
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
 
 extern char **environ;
 
@@ -25,11 +26,18 @@ typedef struct prompt_s
 /* Prompt */
 void	*init_prompt(void);
 void	*free_prompt(void *prompt);
-void	get_prompt(prompt_t *prompt);
+int		get_prompt(prompt_t *prompt);
 
 /* Handlers */
 void	check_alloc(void *ptr);
 void	check_retval(int retval, const char *msg);
 void	check_null(void *ptr, const char *msg);
+
+/* Interpreter */
+char	**parse_command(char *input);
+char	*find_command_path(char *command);
+int		execute_command(char *command_path, char **args);
+int		interpret_command(prompt_t *prompt);
+void	free_args(char **args);
 
 #endif /* HSH_H */
