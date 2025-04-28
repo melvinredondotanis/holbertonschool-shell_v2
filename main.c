@@ -9,9 +9,9 @@
 int main(int argc, char **argv)
 {
 	(void)argc;
-	(void)argv;
 	int status = 0;
 	prompt_t *prmt = init_prompt();
+	char *program_name = (argv[0] != NULL) ? argv[0] : "./hsh";
 
 	if (!isatty(STDIN_FILENO))
 	{
@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 			prmt->input[characters - 1] = '\0';
 
 		prmt->size = strlen(prmt->input);
-		status = interpret_command(prmt);
+		status = interpret_command(prmt, program_name);
 		free_prompt(prmt);
 		return (status);
 	}
@@ -43,7 +43,12 @@ int main(int argc, char **argv)
 		}
 
 		if (prmt->input && *(prmt->input))
-			status = interpret_command(prmt);
+		{
+			prmt->line_count++;
+			status = interpret_command(prmt, program_name);
+			if (status == 255)
+				break;
+		}
 	}
 
 	free_prompt(prmt);

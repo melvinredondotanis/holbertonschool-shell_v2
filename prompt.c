@@ -9,13 +9,16 @@
  *
  * Return: Pointer to the initialized prompt_t structure
  */
-void *init_prompt(void)
+prompt_t *init_prompt(void)
 {
 	prompt_t *prmt = malloc(sizeof(prompt_t));
 
-	check_alloc(prmt);
+	if (!prmt)
+		return (NULL);
+
 	prmt->input = NULL;
 	prmt->size = 0;
+	prmt->line_count = 0;
 	return (prmt);
 }
 

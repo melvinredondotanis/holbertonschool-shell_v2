@@ -138,13 +138,14 @@ void free_args(char **args)
 /**
  * interpret_command - Interpret and execute a command
  * @prompt: The prompt structure containing the command
+ * @program_name: The name of the program (for error messages)
  *
  * Return: The exit status of the command, or -1 on error
  */
-int interpret_command(prompt_t *prompt)
+int interpret_command(prompt_t *prompt, char *program_name)
 {
 	char **args, *command_path;
-	int status = 0;
+	int status = 0, builtin_result;
 
 	if (!prompt || !prompt->input || !*(prompt->input))
 		return (0);
@@ -156,10 +157,18 @@ int interpret_command(prompt_t *prompt)
 		return (0);
 	}
 
+	builtin_result = handle_builtin(args, &status);
+	if (builtin_result != 0)
+	{
+		free_args(args);
+		return (builtin_result == -1 ? 255 : status);
+	}
+
 	command_path = find_command_path(args[0]);
 	if (!command_path)
 	{
-		fprintf(stderr, "%s: command not found\n", args[0]);
+		fprintf(stderr, "%s: %d: %s: not found\n",
+			program_name, prompt->line_count, args[0]);
 		free_args(args);
 		return (127);
 	}
