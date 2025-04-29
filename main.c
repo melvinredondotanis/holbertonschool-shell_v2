@@ -28,6 +28,7 @@ int main(int argc, char **argv)
 			prmt->input[characters - 1] = '\0';
 
 		prmt->size = strlen(prmt->input);
+		prmt->line_count = 1;
 		status = interpret_command(prmt, program_name);
 		free_prompt(prmt);
 		return (status);
