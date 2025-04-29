@@ -41,7 +41,7 @@ void		check_null(void *ptr, const char *msg);
 char		**parse_command(char *input);
 char		*find_command_path(char *command);
 int			execute_command(char *command_path, char **args);
-int			interpret_command(prompt_t *prompt, char *program_name);
+int			interpret_command(prompt_t *prompt, char *program_name, int *exit_req);
 void		free_args(char **args);
 
 /* Built-ins */

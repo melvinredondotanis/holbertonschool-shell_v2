@@ -139,10 +139,11 @@ void free_args(char **args)
  * interpret_command - Interpret and execute a command
  * @prompt: The prompt structure containing the command
  * @program_name: The name of the program (for error messages)
+ * @exit_req: Pointer to an integer to signal if "exit" was requested
  *
  * Return: The exit status of the command, or -1 on error
  */
-int interpret_command(prompt_t *prompt, char *program_name)
+int interpret_command(prompt_t *prompt, char *program_name, int *exit_req)
 {
 	char **args, *command_path;
 	int status = 0, builtin_result;
@@ -161,7 +162,12 @@ int interpret_command(prompt_t *prompt, char *program_name)
 	if (builtin_result != 0)
 	{
 		free_args(args);
-		return (builtin_result == -1 ? 255 : status);
+		if (builtin_result == -1)
+		{
+			*exit_req = 1;
+			return (status);
+		}
+		return (status);
 	}
 
 	command_path = find_command_path(args[0]);

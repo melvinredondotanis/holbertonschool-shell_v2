@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 
 		prmt->size = strlen(prmt->input);
 		prmt->line_count = 1;
-		status = interpret_command(prmt, program_name);
+		status = interpret_command(prmt, program_name, NULL);
 		free_prompt(prmt);
 		return (status);
 	}
@@ -45,9 +45,11 @@ int main(int argc, char **argv)
 
 		if (prmt->input && *(prmt->input))
 		{
+			int exit_requested = 0;
+
 			prmt->line_count++;
-			status = interpret_command(prmt, program_name);
-			if (status == 255)
+			status = interpret_command(prmt, program_name, &exit_requested);
+			if (exit_requested)
 				break;
 		}
 	}

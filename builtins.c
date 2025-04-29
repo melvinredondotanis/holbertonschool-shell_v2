@@ -18,7 +18,7 @@ int builtin_exit(char **args, int *status)
 
 		if (*endptr != '\0' || val < 0)
 		{
-			fprintf(stderr, "exit: Illegal number: %s\n", args[1]);
+			fprintf(stderr, "exit: %s: necessary numerical argument\n", args[1]);
 			*status = 2;
 			return (0);
 		}
