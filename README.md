@@ -6,7 +6,7 @@ This project is a simple shell implementation in C, designed to mimic the behavi
 ## Compilation
 To compile the shell, use the following command:
 ```bash
-make all
+make
 ```
 This will create an executable file named `hsh`.
 
