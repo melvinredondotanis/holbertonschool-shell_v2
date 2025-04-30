@@ -62,7 +62,7 @@ int get_prompt(prompt_t *prmt)
 		prmt->input = NULL;
 	}
 
-	printf("$ ");
+	printf("($) ");
 	fflush(stdout);
 	characters = getline(&(prmt->input), &bufsize, stdin);
 
