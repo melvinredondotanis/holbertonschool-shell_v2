@@ -16,20 +16,44 @@ int main(int argc, char **argv)
 	if (!isatty(STDIN_FILENO))
 	{
 		size_t bufsize = 0;
-		ssize_t characters = getline(&(prmt->input), &bufsize, stdin);
-
-		if (characters == -1)
+		char *line = NULL;
+		ssize_t characters;
+		int exit_requested = 0;
+		
+		while ((characters = getline(&line, &bufsize, stdin)) != -1)
 		{
-			free_prompt(prmt);
-			return (1);
+			if (characters > 0)
+			{
+				if (line[characters - 1] == '\n')
+					line[characters - 1] = '\0';
+				
+				if (prmt->input)
+				{
+					free(prmt->input);
+					prmt->input = NULL;
+				}
+				
+				prmt->input = strdup(line);
+				if (!prmt->input)
+				{
+					free(line);
+					free_prompt(prmt);
+					return (1);
+				}
+				
+				prmt->size = strlen(prmt->input);
+				prmt->line_count++;
+				
+				if (*(prmt->input))
+				{
+					status = interpret_command(prmt, program_name, &exit_requested);
+					if (exit_requested)
+						break;
+				}
+			}
 		}
-
-		if (characters > 0 && prmt->input[characters - 1] == '\n')
-			prmt->input[characters - 1] = '\0';
-
-		prmt->size = strlen(prmt->input);
-		prmt->line_count = 1;
-		status = interpret_command(prmt, program_name, NULL);
+		
+		free(line);
 		free_prompt(prmt);
 		return (status);
 	}
