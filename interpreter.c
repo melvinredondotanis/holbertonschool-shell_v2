@@ -158,7 +158,7 @@ int interpret_command(prompt_t *prompt, char *program_name, int *exit_req)
 		return (0);
 	}
 
-	builtin_result = handle_builtin(args, &status);
+	builtin_result = handle_builtin(args, &status, program_name, prompt->line_count);
 	if (builtin_result != 0)
 	{
 		free_args(args);

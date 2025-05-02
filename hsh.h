@@ -45,9 +45,9 @@ int			interpret_command(prompt_t *prompt, char *program_name, int *exit_req);
 void		free_args(char **args);
 
 /* Built-ins */
-int			builtin_exit(char **args, int *status);
-int			builtin_cd(char **args);
+int			builtin_exit(char **args, int *status, char *program_name, int line_count);
+int			builtin_cd(char **args, char *program_name, int line_count);
 int			builtin_env(void);
-int			handle_builtin(char **args, int *status);
+int			handle_builtin(char **args, int *status, char *program_name, int line_count);
 
 #endif /* HSH_H */
