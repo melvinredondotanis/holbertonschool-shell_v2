@@ -37,6 +37,9 @@ void		check_alloc(void *ptr);
 void		check_retval(int retval, const char *msg);
 void		check_null(void *ptr, const char *msg);
 
+/* Tokenizer */
+char tokenize_command(char *input);
+
 /* Interpreter */
 char		**parse_command(char *input);
 char		*find_command_path(char *command);
