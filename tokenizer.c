@@ -1,11 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
+#include "hsh.h"
 
 /**
  * free_tokens - Frees the memory allocated for the tokens
  * @tokens: The array of tokens to free
+ *
+ * Example:
+ *   If tokens = [["ls", "-l", NULL], ["|", NULL], ["grep", "file", NULL], NULL]
+ *   All memory for this structure will be freed
  */
 static void free_tokens(char ***tokens)
 {
@@ -27,22 +28,28 @@ static void free_tokens(char ***tokens)
  * tokenize_args - Tokenizes a command and its arguments
  * @command: The command string to tokenize
  *
+ * Example:
+ *   Input: "ls -l /tmp"
+ *   Output: ["ls", "-l", "/tmp", NULL]
+ *
  * Return: A pointer to an array of strings, or NULL on failure
  */
 static char **tokenize_args(char *command)
 {
 	char **args;
-	char *token, *str;
-	char *saveptr;
+	char *token, *str, *saveptr;
 	int i, j;
 
 	args = malloc(sizeof(char *) * 64);
 	str = strdup(command);
-	i = 0;
-
 	if (!args || !str)
+	{
+		free(args);
+		free(str);
 		return (NULL);
+	}
 
+	i = 0;
 	token = strtok_r(str, " ", &saveptr);
 	while (token != NULL)
 	{
@@ -64,8 +71,48 @@ static char **tokenize_args(char *command)
 }
 
 /**
- * tokenize_command - Tokenizes a command string
+ * handle_operator - Handles an operator token
+ * @commands: Array of commands
+ * @idx: Current index
+ * @op_char: Operator character
+ * @is_double: Whether it's a double operator
+ *
+ * Example:
+ *   op_char = '>', is_double = 1
+ *   Result: commands[idx] = [">>", NULL]
+ *
+ * Return: 1 on success, 0 on failure
+ */
+static int handle_operator(char ***commands, int idx, char op_char, int is_double)
+{
+	char op[3];
+
+	op[0] = op_char;
+	op[1] = is_double ? op_char : '\0';
+	op[2] = '\0';
+
+	commands[idx] = malloc(sizeof(char *) * 2);
+	if (!commands[idx])
+		return (0);
+
+	commands[idx][0] = strdup(op);
+	if (!commands[idx][0])
+	{
+		free(commands[idx]);
+		return (0);
+	}
+	commands[idx][1] = NULL;
+	return (1);
+}
+
+/**
+ * tokenize_command - Tokenizes a command string with operators
  * @input: The input string to tokenize
+ *
+ * Example:
+ *   Input: "ls -l | grep file > output.txt"
+ *   Output: [["ls", "-l", NULL], ["|", NULL], ["grep", "file", NULL],
+ *            [">", NULL], ["output.txt", NULL], NULL]
  *
  * Return: A pointer to an array of strings, or NULL on failure
  */
@@ -75,82 +122,55 @@ char ***tokenize_command(char *input)
 	int i, j, start;
 	char ***commands;
 	char tmp;
-	char op[3];
+	int is_double;
 
 	input_copy = strdup(input);
+	commands = malloc(sizeof(char **) * 64);
+	if (!commands || !input_copy)
+	{
+		free(input_copy);
+		free(commands);
+		return (NULL);
+	}
+
 	i = 0;
 	j = 0;
-	commands = malloc(sizeof(char **) * 64); /* Initial size */
-
-	if (!commands || !input_copy)
-		return (NULL);
-
 	while (input_copy[j] != '\0')
 	{
-		/* Skip leading spaces */
+		/* Skip spaces */
 		while (input_copy[j] == ' ')
 			j++;
-
 		if (input_copy[j] == '\0')
 			break;
 
-		/* Determine if current character is the start of an operator */
+		/* Handle operators */
 		if (input_copy[j] == '|' || input_copy[j] == '>' || input_copy[j] == '<')
 		{
-			/* Handle double operators (>> or <<) */
-			if ((input_copy[j] == '>' || input_copy[j] == '<') &&
-				input_copy[j + 1] == input_copy[j])
+			is_double = (input_copy[j] == '>' || input_copy[j] == '<') &&
+				input_copy[j + 1] == input_copy[j];
+
+			if (!handle_operator(commands, i, input_copy[j], is_double))
 			{
-				commands[i] = malloc(sizeof(char *) * 2);
-				if (!commands[i])
-				{
-					free_tokens(commands);
-					free(input_copy);
-					return (NULL);
-				}
-				op[0] = input_copy[j];
-				op[1] = input_copy[j + 1];
-				op[2] = '\0';
-				commands[i][0] = strdup(op);
-				commands[i][1] = NULL;
-				j += 2;
-			}
-			else
-			{
-				commands[i] = malloc(sizeof(char *) * 2);
-				if (!commands[i])
-				{
-					free_tokens(commands);
-					free(input_copy);
-					return (NULL);
-				}
-				op[0] = input_copy[j];
-				op[1] = '\0';
-				commands[i][0] = strdup(op);
-				commands[i][1] = NULL;
-				j++;
+				free_tokens(commands);
+				free(input_copy);
+				return (NULL);
 			}
 			i++;
+			j += is_double ? 2 : 1;
 		}
+		/* Handle regular commands */
 		else
 		{
-			/* This is the start of a command */
 			start = j;
-
-			/* Find end of command (until next operator or end of string) */
 			while (input_copy[j] != '\0' &&
 				   input_copy[j] != '|' &&
 				   input_copy[j] != '>' &&
 				   input_copy[j] != '<')
-			{
 				j++;
-			}
 
-			/* Null-terminate the command temporarily */
 			tmp = input_copy[j];
 			input_copy[j] = '\0';
 
-			/* Parse the command and its arguments */
 			commands[i] = tokenize_args(&input_copy[start]);
 			if (!commands[i])
 			{
@@ -159,13 +179,10 @@ char ***tokenize_command(char *input)
 				return (NULL);
 			}
 			i++;
-
-			/* Restore the character */
 			input_copy[j] = tmp;
 		}
 	}
-
-	commands[i] = NULL; /* Null-terminate the command list */
+	commands[i] = NULL;
 	free(input_copy);
 	return (commands);
 }

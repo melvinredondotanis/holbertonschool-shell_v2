@@ -5,16 +5,22 @@
  * @args: Arguments passed to the exit command
  * @status: Pointer to the current status (to be updated)
  *
+ * Examples:
+ *   exit       - Exits with current status
+ *   exit 42    - Exits with status 42
+ *   exit abc   - Prints error and sets status to 2
+ *
  * Return: 1 to indicate the shell should exit, 0 otherwise
  */
-int builtin_exit(char **args, int *status)
+static int builtin_exit(char **args, int *status)
 {
 	int exit_status = *status;
+	long val;
+	char *endptr;
 
 	if (args[1])
 	{
-		char *endptr;
-		long val = strtol(args[1], &endptr, 10);
+		val = strtol(args[1], &endptr, 10);
 
 		if (*endptr != '\0' || val < 0)
 		{
@@ -28,6 +34,7 @@ int builtin_exit(char **args, int *status)
 	*status = exit_status;
 	if (isatty(STDIN_FILENO))
 		printf("exit\n");
+
 	return (1);
 }
 
@@ -35,19 +42,28 @@ int builtin_exit(char **args, int *status)
  * builtin_cd - Handle the cd built-in command
  * @args: Arguments passed to the cd command
  *
+ * Examples:
+ *   cd         - Changes to HOME directory
+ *   cd ~       - Changes to HOME directory
+ *   cd -       - Changes to previous directory (OLDPWD)
+ *   cd /path   - Changes to specified path
+ *
  * Return: 0 on success, -1 on failure
  */
-int builtin_cd(char **args)
+static int builtin_cd(char **args)
 {
 	char cwd[PATH_MAX];
-	char *dir = NULL, *oldpwd = NULL;
+	char *dir = NULL;
+	char *oldpwd = NULL;
 
+	/* Get current working directory */
 	if (getcwd(cwd, sizeof(cwd)) == NULL)
 	{
 		perror("getcwd");
 		return (-1);
 	}
 
+	/* Determine target directory */
 	if (!args[1] || strcmp(args[1], "~") == 0)
 	{
 		dir = getenv("HOME");
@@ -68,8 +84,11 @@ int builtin_cd(char **args)
 		printf("%s\n", dir);
 	}
 	else
+	{
 		dir = args[1];
+	}
 
+	/* Save old path to set OLDPWD later */
 	oldpwd = strdup(cwd);
 	if (!oldpwd)
 	{
@@ -77,6 +96,7 @@ int builtin_cd(char **args)
 		return (-1);
 	}
 
+	/* Change directory */
 	if (chdir(dir) == -1)
 	{
 		fprintf(stderr, "cd: can't cd to %s\n", dir);
@@ -84,6 +104,7 @@ int builtin_cd(char **args)
 		return (-1);
 	}
 
+	/* Get new current directory */
 	if (getcwd(cwd, sizeof(cwd)) == NULL)
 	{
 		perror("getcwd");
@@ -91,6 +112,7 @@ int builtin_cd(char **args)
 		return (-1);
 	}
 
+	/* Update environment variables */
 	if (setenv("OLDPWD", oldpwd, 1) == -1 || setenv("PWD", cwd, 1) == -1)
 	{
 		perror("setenv");
@@ -105,9 +127,12 @@ int builtin_cd(char **args)
 /**
  * builtin_env - Handle the env built-in command
  *
+ * Example:
+ *   env        - Lists all environment variables
+ *
  * Return: Always returns 0
  */
-int builtin_env(void)
+static int builtin_env(void)
 {
 	int i;
 
@@ -121,6 +146,11 @@ int builtin_env(void)
  * handle_builtin - Check if command is a built-in and execute it
  * @args: Command and its arguments
  * @status: Pointer to the shell status
+ *
+ * Examples:
+ *   args={"exit", NULL}                - Exits shell
+ *   args={"cd", "/tmp", NULL}          - Changes directory
+ *   args={"env", NULL}                 - Shows environment
  *
  * Return: 1 if a built-in was executed, 0 otherwise, -1 on exit
  */
