@@ -51,6 +51,7 @@ char		*_strtok_r(char *str, const char *delim, char **saveptr);
 int			_strlen(const char *str);
 char		*_strdup(char *str);
 int			_strcmp(const char *str1, const char *str2);
+int			_strncmp(const char *str1, const char *str2, size_t n);
 char		*_strchr(const char *s, int c);
 int			_setenv(const char *name, const char *value, int overwrite);
 
