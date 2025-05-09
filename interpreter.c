@@ -20,10 +20,10 @@ static char *find_command_path(char *command)
 		return (NULL);
 
 	/* If command contains '/', treat it as a path */
-	if (strchr(command, '/') != NULL)
+	if (_strchr(command, '/') != NULL)
 	{
 		if (stat(command, &buffer) == 0 && (buffer.st_mode & S_IXUSR))
-			return (strdup(command));
+			return (_strdup(command));
 		return (NULL);
 	}
 
@@ -31,15 +31,15 @@ static char *find_command_path(char *command)
 	if (!path_env)
 		return (NULL);
 
-	path_copy = strdup(path_env);
+	path_copy = _strdup(path_env);
 	if (!path_copy)
 		return (NULL);
 
-	command_len = strlen(command);
+	command_len = _strlen(command);
 	path_token = strtok(path_copy, ":");
 	while (path_token)
 	{
-		dir_len = strlen(path_token);
+		dir_len = _strlen(path_token);
 		file_path = malloc(dir_len + command_len + 2); /* +2 for '/' and '\0' */
 		if (!file_path)
 		{
@@ -87,7 +87,7 @@ static int setup_redirections(char ***tokens, int idx, int saved_fds[2])
 		if (tokens[i][0][0] == '<' || tokens[i][0][0] == '>')
 		{
 			int is_input = (tokens[i][0][0] == '<');
-			int is_append = (strcmp(tokens[i][0], ">>") == 0);
+			int is_append = (_strcmp(tokens[i][0], ">>") == 0);
 			int target_fd = is_input ? STDIN_FILENO : STDOUT_FILENO;
 			int flags;
 
@@ -139,7 +139,7 @@ static int execute_command(char ***tokens, char *program_name)
 	{
 		/* Skip empty commands and operators */
 		if (!tokens[i][0] || !tokens[i][0][0] ||
-			strchr("<>|", tokens[i][0][0]))
+			_strchr("<>|", tokens[i][0][0]))
 		{
 			i++;
 			continue;
@@ -149,7 +149,7 @@ static int execute_command(char ***tokens, char *program_name)
 		int has_next_pipe = 0;
 		for (int j = i + 1; tokens[j] != NULL; j++)
 		{
-			if (tokens[j][0] && strcmp(tokens[j][0], "|") == 0)
+			if (tokens[j][0] && _strcmp(tokens[j][0], "|") == 0)
 			{
 				has_next_pipe = 1;
 				if (pipe(pipe_fds[curr_pipe]) == -1)
@@ -228,7 +228,7 @@ static int execute_command(char ***tokens, char *program_name)
 
 			while (tokens[next_cmd] != NULL)
 			{
-				if (tokens[next_cmd][0] && strcmp(tokens[next_cmd][0], "|") == 0)
+				if (tokens[next_cmd][0] && _strcmp(tokens[next_cmd][0], "|") == 0)
 				{
 					next_cmd++;
 					break;

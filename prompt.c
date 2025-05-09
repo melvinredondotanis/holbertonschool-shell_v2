@@ -90,6 +90,6 @@ int get_prompt(prompt_t *prmt)
 	if (characters > 0 && prmt->input[characters - 1] == '\n')
 		prmt->input[characters - 1] = '\0';
 
-	prmt->size = strlen(prmt->input);
+	prmt->size = _strlen(prmt->input);
 	return (0);
 }

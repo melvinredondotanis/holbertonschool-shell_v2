@@ -41,7 +41,7 @@ static char **tokenize_args(char *command)
 	int i, j;
 
 	args = malloc(sizeof(char *) * 64);
-	str = strdup(command);
+	str = _strdup(command);
 	if (!args || !str)
 	{
 		free(args);
@@ -50,10 +50,10 @@ static char **tokenize_args(char *command)
 	}
 
 	i = 0;
-	token = strtok_r(str, " ", &saveptr);
+	token = _strtok_r(str, " ", &saveptr);
 	while (token != NULL)
 	{
-		args[i] = strdup(token);
+		args[i] = _strdup(token);
 		if (!args[i])
 		{
 			free(str);
@@ -63,7 +63,7 @@ static char **tokenize_args(char *command)
 			return (NULL);
 		}
 		i++;
-		token = strtok_r(NULL, " ", &saveptr);
+		token = _strtok_r(NULL, " ", &saveptr);
 	}
 	args[i] = NULL;
 	free(str);
@@ -95,7 +95,7 @@ static int handle_operator(char ***commands, int idx, char op_char, int is_doubl
 	if (!commands[idx])
 		return (0);
 
-	commands[idx][0] = strdup(op);
+	commands[idx][0] = _strdup(op);
 	if (!commands[idx][0])
 	{
 		free(commands[idx]);
@@ -124,7 +124,7 @@ char ***tokenize_command(char *input)
 	char tmp;
 	int is_double;
 
-	input_copy = strdup(input);
+	input_copy = _strdup(input);
 	commands = malloc(sizeof(char **) * 64);
 	if (!commands || !input_copy)
 	{

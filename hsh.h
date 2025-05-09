@@ -45,4 +45,13 @@ int			interpret_tokens(char ***tokens, char *program_name);
 /* Builtins */
 int			handle_builtin(char **args, int *status);
 
+/* Prohibited functions */
+long		_strtol(const char *str, char **endptr, int base);
+char		*_strtok_r(char *str, const char *delim, char **saveptr);
+int			_strlen(const char *str);
+char		*_strdup(char *str);
+int			_strcmp(const char *str1, const char *str2);
+char		*_strchr(const char *s, int c);
+int			_setenv(const char *name, const char *value, int overwrite);
+
 #endif /* HSH_H */

@@ -20,7 +20,7 @@ static int builtin_exit(char **args, int *status)
 
 	if (args[1])
 	{
-		val = strtol(args[1], &endptr, 10);
+		val = _strtol(args[1], &endptr, 10);
 
 		if (*endptr != '\0' || val < 0)
 		{
@@ -64,7 +64,7 @@ static int builtin_cd(char **args)
 	}
 
 	/* Determine target directory */
-	if (!args[1] || strcmp(args[1], "~") == 0)
+	if (!args[1] || _strcmp(args[1], "~") == 0)
 	{
 		dir = getenv("HOME");
 		if (!dir)
@@ -73,7 +73,7 @@ static int builtin_cd(char **args)
 			return (-1);
 		}
 	}
-	else if (strcmp(args[1], "-") == 0)
+	else if (_strcmp(args[1], "-") == 0)
 	{
 		dir = getenv("OLDPWD");
 		if (!dir)
@@ -84,15 +84,13 @@ static int builtin_cd(char **args)
 		printf("%s\n", dir);
 	}
 	else
-	{
 		dir = args[1];
-	}
 
 	/* Save old path to set OLDPWD later */
-	oldpwd = strdup(cwd);
+	oldpwd = _strdup(cwd);
 	if (!oldpwd)
 	{
-		perror("strdup");
+		perror("_strdup");
 		return (-1);
 	}
 
@@ -113,9 +111,9 @@ static int builtin_cd(char **args)
 	}
 
 	/* Update environment variables */
-	if (setenv("OLDPWD", oldpwd, 1) == -1 || setenv("PWD", cwd, 1) == -1)
+	if (_setenv("OLDPWD", oldpwd, 1) == -1 || _setenv("PWD", cwd, 1) == -1)
 	{
-		perror("setenv");
+		perror("_setenv");
 		free(oldpwd);
 		return (-1);
 	}
@@ -159,18 +157,18 @@ int handle_builtin(char **args, int *status)
 	if (!args || !args[0])
 		return (0);
 
-	if (strcmp(args[0], "exit") == 0)
+	if (_strcmp(args[0], "exit") == 0)
 	{
 		if (builtin_exit(args, status))
 			return (-1);
 		return (1);
 	}
-	else if (strcmp(args[0], "cd") == 0)
+	else if (_strcmp(args[0], "cd") == 0)
 	{
 		*status = builtin_cd(args) == 0 ? 0 : 1;
 		return (1);
 	}
-	else if (strcmp(args[0], "env") == 0)
+	else if (_strcmp(args[0], "env") == 0)
 	{
 		*status = builtin_env();
 		return (1);
