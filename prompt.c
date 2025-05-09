@@ -80,8 +80,8 @@ int get_prompt(prompt_t *prmt)
 		prmt->input = NULL;
 	}
 
-	printf("$ ");
-	fflush(stdout);
+	if (isatty(STDIN_FILENO))
+		write(STDOUT_FILENO, "$ ", 2);
 	characters = getline(&(prmt->input), &bufsize, stdin);
 
 	if (characters == -1)
@@ -90,6 +90,6 @@ int get_prompt(prompt_t *prmt)
 	if (characters > 0 && prmt->input[characters - 1] == '\n')
 		prmt->input[characters - 1] = '\0';
 
-	prmt->size = _strlen(prmt->input);
+	prmt->size = strlen(prmt->input);
 	return (0);
 }
