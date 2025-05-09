@@ -30,21 +30,20 @@ int _setenv(const char *name, const char *value, int overwrite)
 				sprintf(environ[i], "%s=%s", name, value);
 			}
 			return (0);
-			_strtol.c : 85 : WARNING : More than 40 lines in a function
-										   _strtol.c : 86 : WARNING : More than 40 lines in a function
-																		  total : 0 errors,
-				4 warnings, 87 lines checked _isspace _isdigit _strtol
-➜ holbertonschool - shell_v2 git : (1.1 - 1.5) ✗ betty hsh.h
+		}
+	}
 
-									return (-1);
+	env = realloc(environ, sizeof(char *) * (i + 2));
+	if (env == NULL)
+		return (-1);
 
-			environ = env;
-			environ[i] = malloc(len + _strlen(value) + 2);
-			if (environ[i] == NULL)
-				return (-1);
+	environ = env;
+	environ[i] = malloc(len + _strlen(value) + 2);
+	if (environ[i] == NULL)
+		return (-1);
 
-			sprintf(environ[i], "%s=%s", name, value);
-			environ[i + 1] = NULL;
+	sprintf(environ[i], "%s=%s", name, value);
+	environ[i + 1] = NULL;
 
-			return (0);
+	return (0);
 }
