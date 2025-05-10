@@ -160,10 +160,46 @@ char ***tokenize_command(char *input)
 			break;
 
 		/* Handle operators */
-		if (input_copy[j] == '|' || input_copy[j] == '>' || input_copy[j] == '<' || input_copy[j] == ';')
+		if (input_copy[j] == '|' || input_copy[j] == '>' || input_copy[j] == '<' || input_copy[j] == ';' || input_copy[j] == '&')
 		{
-			is_double = (input_copy[j] == '>' || input_copy[j] == '<') &&
-				input_copy[j + 1] == input_copy[j];
+			/* Check for logical operators (|| and &&) */
+			if ((input_copy[j] == '|' && input_copy[j + 1] == '|') ||
+				(input_copy[j] == '&' && input_copy[j + 1] == '&'))
+			{
+				/* Create a separate token for logical operators */
+				char op[3];
+				op[0] = input_copy[j];
+				op[1] = input_copy[j];
+				op[2] = '\0';
+
+				/* Set up the operator token */
+				commands[i] = malloc(sizeof(char *) * 2);
+				if (!commands[i])
+				{
+					free_tokens(commands);
+					free(input_copy);
+					return (NULL);
+				}
+
+				commands[i][0] = _strdup(op);
+				if (!commands[i][0])
+				{
+					free(commands[i]);
+					free_tokens(commands);
+					free(input_copy);
+					return (NULL);
+				}
+				commands[i][1] = NULL;
+
+				i++;
+				j += 2; /* Skip both characters of the logical operator */
+				continue;
+			}
+			else
+			{
+				is_double = (input_copy[j] == '>' || input_copy[j] == '<') &&
+					input_copy[j + 1] == input_copy[j];
+			}
 
 			/* Special handling for heredoc (<<) */
 			if (input_copy[j] == '<' && input_copy[j + 1] == '<')
@@ -243,7 +279,8 @@ char ***tokenize_command(char *input)
 				   input_copy[j] != '|' &&
 				   input_copy[j] != '>' &&
 				   input_copy[j] != '<' &&
-				   input_copy[j] != ';')
+				   input_copy[j] != ';' &&
+				   input_copy[j] != '&')
 				j++;
 
 			/* Temporarily null-terminate the command string */

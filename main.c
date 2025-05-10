@@ -83,14 +83,13 @@ int main(int argc, char **argv)
 			/* Remove newline if present */
 			if (buffer[read_bytes - 1] == '\n')
 				buffer[read_bytes - 1] = '\0';
-
-			/* Process the command */
-			tokens = tokenize_command(buffer);
-			if (tokens)
-			{
-				status = interpret_tokens(tokens, argv[0], 0);
-				free_tokens(tokens);
-			}
+		/* Process the command */
+		tokens = tokenize_command(buffer);
+		if (tokens)
+		{
+			status = interpret_tokens(tokens, argv[0], 0);
+			free_tokens(tokens);
+		}
 		}
 		free(buffer);
 		free_prompt(prompt);

@@ -103,7 +103,7 @@ static int handle_heredoc(char *delimiter, int pipefd[2])
 			break;
 
 		/* Write the line to the pipe with a newline */
-		write(pipefd[1], line, strlen(line));
+		write(pipefd[1], line, _strlen(line));
 		write(pipefd[1], "\n", 1);
 
 		/* Display prompt for next line if in interactive mode */
@@ -289,7 +289,9 @@ static int execute_command(char ***tokens, char *program_name, int line_count)
 	{
 		/* Skip empty commands and operators */
 		if (!tokens[i][0] || !tokens[i][0][0] ||
-			_strchr("<>|;", tokens[i][0][0]))
+			_strchr("<>|;", tokens[i][0][0]) ||
+			_strcmp(tokens[i][0], "&&") == 0 ||
+			_strcmp(tokens[i][0], "||") == 0)
 		{
 			i++;
 			continue;
@@ -448,26 +450,112 @@ static int execute_command(char ***tokens, char *program_name, int line_count)
  */
 int interpret_tokens(char ***tokens, char *program_name, int line_count)
 {
-	int i = 0, j, status = 0, semicolon_found;
+	int i = 0, j, status = 0;
+	int semicolon_found = 0;
+	int logical_op_found = 0;
 	char ***cmd_segment;
 
 	if (!tokens || !tokens[0] || !tokens[0][0])
 		return (0);
 
-	/* Check if there are any semicolons in the command */
-	semicolon_found = 0;
+	/* Check if there are any semicolons or logical operators in the command */
 	for (j = 0; tokens[j] != NULL; j++)
 	{
-		if (tokens[j][0] && _strcmp(tokens[j][0], ";") == 0)
+		if (tokens[j][0])
 		{
-			semicolon_found = 1;
-			break;
+			if (_strcmp(tokens[j][0], ";") == 0)
+			{
+				semicolon_found = 1;
+				break;
+			}
+			else if (_strcmp(tokens[j][0], "&&") == 0 || _strcmp(tokens[j][0], "||") == 0)
+			{
+				logical_op_found = 1;
+			}
 		}
 	}
 
-	/* If no semicolons, just execute the command as is */
-	if (!semicolon_found)
+	/* If no semicolons and no logical operators, just execute the command as is */
+	if (!semicolon_found && !logical_op_found)
 		return (execute_command(tokens, program_name, line_count));
+
+	/* Handle logical operators (&& and ||) without semicolons */
+	if (!semicolon_found && logical_op_found)
+	{
+		j = 0;
+		while (tokens[j] != NULL)
+		{
+			/* Find the next logical operator or end of tokens */
+			int op_index = j;
+			while (tokens[op_index] != NULL &&
+				  (tokens[op_index][0] == NULL ||
+				   (_strcmp(tokens[op_index][0], "&&") != 0 &&
+				    _strcmp(tokens[op_index][0], "||") != 0)))
+				op_index++;
+
+			/* Create temporary array for the current command segment */
+			cmd_segment = malloc(sizeof(char **) * (op_index - j + 1));
+			if (!cmd_segment)
+				return (1);
+
+			/* Copy tokens for the current segment */
+			int k;
+			for (k = 0; j + k < op_index; k++)
+				cmd_segment[k] = tokens[j + k];
+			cmd_segment[k] = NULL;
+
+			/* Execute the command segment */
+			if (cmd_segment[0] != NULL && cmd_segment[0][0] != NULL)
+			{
+				status = execute_command(cmd_segment, program_name, line_count);
+
+				/* Free the temporary array */
+				free(cmd_segment);
+
+				/* Check if we've reached the end */
+				if (tokens[op_index] == NULL)
+					return (status);
+
+				/* Handle && (execute next command only if current succeeded) */
+				if (_strcmp(tokens[op_index][0], "&&") == 0)
+				{
+					if (status != 0)
+					{
+						/* Skip to next semicolon or end */
+						while (tokens[op_index] != NULL &&
+							_strcmp(tokens[op_index][0], ";") != 0)
+							op_index++;
+
+						if (tokens[op_index] == NULL)
+							return (status);
+					}
+				}
+				/* Handle || (execute next command only if current failed) */
+				else if (_strcmp(tokens[op_index][0], "||") == 0)
+				{
+					if (status == 0)
+					{
+						/* Skip to next semicolon or end */
+						while (tokens[op_index] != NULL &&
+							_strcmp(tokens[op_index][0], ";") != 0)
+							op_index++;
+
+						if (tokens[op_index] == NULL)
+							return (status);
+					}
+				}
+
+				j = op_index + 1;
+			}
+			else
+			{
+				/* Empty command segment */
+				free(cmd_segment);
+				j = op_index + 1;
+			}
+		}
+		return (status);
+	}
 
 	/* Handle multiple commands separated by semicolons */
 	while (tokens[i] != NULL)
