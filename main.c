@@ -10,7 +10,7 @@ static int _is_whitespace_only(const char *str)
 {
 	while (*str)
 	{
-		if (!isspace((unsigned char)*str))
+		if (!_isspace((unsigned char)*str))
 			return (0);
 		str++;
 	}
