@@ -57,5 +57,7 @@ char		*_strchr(const char *s, int c);
 int			_isspace(int c);
 char		*_getenv(const char *name);
 int			_setenv(const char *name, const char *value);
+char		*_strcat(char *dest, const char *src);
+int			_putenv(char *string);
 
 #endif /* HSH_H */

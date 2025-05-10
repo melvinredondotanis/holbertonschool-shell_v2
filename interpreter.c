@@ -50,12 +50,12 @@ static char *find_command_path(char *command)
 		{
 			free(path_copy);
 			return (NULL);
-			}
+		}
 
 		/* Build the full path */
 		strcpy(file_path, path_token);
-		strcat(file_path, "/");
-		strcat(file_path, command);
+		_strcat(file_path, "/");
+		_strcat(file_path, command);
 
 		/* Check if file exists and is executable */
 		if (stat(file_path, &buffer) == 0 && (buffer.st_mode & S_IXUSR))
@@ -127,6 +127,12 @@ static int setup_redirections(char ***tokens, int idx, int saved_fds[2])
 
 			/* Save original fd and redirect */
 			saved_fds[is_input ? 0 : 1] = dup(target_fd);
+			if (saved_fds[is_input ? 0 : 1] == -1)
+			{
+				perror("dup");
+				close(fd);
+				return (-1);
+			}
 			dup2(fd, target_fd);
 			close(fd);
 			i += 2;
@@ -282,13 +288,14 @@ static int execute_command(char ***tokens, char *program_name, int line_count)
 			if (!command_path)
 			{
 				fprintf(stderr, "%s: %d: %s: not found\n", program_name, line_count, tokens[i][0]);
-				free(command_path);
+				/* No need to free NULL pointer */
 				free_tokens(tokens);
 				exit(127);
 			}
 			execve(command_path, tokens[i], environ);
 			perror("execve");
 			free(command_path);
+			free_tokens(tokens); /* Free tokens before exit */
 			exit(1);
 		}
 		else

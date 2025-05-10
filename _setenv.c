@@ -12,38 +12,24 @@ int _setenv(const char *name, const char *value)
 	char *new_var = NULL;
 	int result = 0;
 
-	if (_getenv(name) != NULL)
+	new_var = (char *)malloc(_strlen(name) + _strlen(value) + 2);
+	if (new_var == NULL)
 	{
-		new_var = (char *)malloc(strlen(name) + strlen(value) + 2);
-		if (new_var == NULL)
-		{
-			perror("_setenv");
-			return (-1);
-		}
-		sprintf(new_var, "%s=%s", name, value);
-		result = putenv(new_var);
-		if (result != 0)
-		{
-			perror("_setenv");
-			free(new_var);
-			return (-1);
-		}
+		perror("_setenv");
+		return (-1);
 	}
-	else
+
+	strcpy(new_var, name);
+	_strcat(new_var, "=");
+	_strcat(new_var, value);
+
+	result = _putenv(new_var);
+	if (result != 0)
 	{
-		new_var = (char *)malloc(strlen(name) + strlen(value) + 2);
-		if (new_var == NULL)
-		{
-			perror("_setenv");
-			return (-1);
-		}
-		sprintf(new_var, "%s=%s", name, value);
-		if (putenv(new_var) != 0)
-		{
-			perror("_setenv");
-			free(new_var);
-			return (-1);
-		}
+		perror("_setenv");
+		free(new_var);
+		return (-1);
 	}
+	free(new_var);
 	return (0);
 }
