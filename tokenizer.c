@@ -165,14 +165,74 @@ char ***tokenize_command(char *input)
 			is_double = (input_copy[j] == '>' || input_copy[j] == '<') &&
 				input_copy[j + 1] == input_copy[j];
 
-			if (!handle_operator(commands, i, input_copy[j], is_double))
+			/* Special handling for heredoc (<<) */
+			if (input_copy[j] == '<' && input_copy[j + 1] == '<')
 			{
-				free_tokens(commands);
-				free(input_copy);
-				return (NULL);
+				/* Create the << operator token */
+				if (!handle_operator(commands, i, input_copy[j], 1))
+				{
+					free_tokens(commands);
+					free(input_copy);
+					return (NULL);
+				}
+				i++;
+				j += 2;
+
+				/* Skip any whitespace */
+				while (input_copy[j] == ' ' || input_copy[j] == '\t')
+					j++;
+
+				/* Extract the delimiter */
+				start = j;
+				while (input_copy[j] != '\0' && input_copy[j] != ' ' &&
+					input_copy[j] != '\t' && input_copy[j] != '\n' &&
+					input_copy[j] != '|' && input_copy[j] != '>' &&
+					input_copy[j] != '<')
+					j++;
+
+				/* Create a token for the delimiter */
+				if (j > start)
+				{
+					tmp = input_copy[j];
+					input_copy[j] = '\0';
+
+					/* Allocate memory for delimiter array */
+					commands[i] = malloc(sizeof(char *) * 2);
+					if (!commands[i])
+					{
+						free_tokens(commands);
+						free(input_copy);
+						return (NULL);
+					}
+
+					/* Copy delimiter string */
+					commands[i][0] = _strdup(&input_copy[start]);
+					if (!commands[i][0])
+					{
+						free(commands[i]);
+						free_tokens(commands);
+						free(input_copy);
+						return (NULL);
+					}
+					commands[i][1] = NULL;
+
+					/* Restore original character */
+					input_copy[j] = tmp;
+					i++;
+				}
 			}
-			i++;
-			j += is_double ? 2 : 1;
+			else
+			{
+				/* Standard operator handling */
+				if (!handle_operator(commands, i, input_copy[j], is_double))
+				{
+					free_tokens(commands);
+					free(input_copy);
+					return (NULL);
+				}
+				i++;
+				j += is_double ? 2 : 1;
+			}
 		}
 		/* Handle regular commands */
 		else

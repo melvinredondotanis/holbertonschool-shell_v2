@@ -75,6 +75,48 @@ static char *find_command_path(char *command)
 }
 
 /**
+ * handle_heredoc - Handle heredoc redirection
+ * @delimiter: The delimiter string that ends the heredoc
+ * @pipefd: Pipe file descriptors for communication
+ *
+ * Return: 0 on success, -1 on failure
+ */
+static int handle_heredoc(char *delimiter, int pipefd[2])
+{
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t read_len;
+	int is_interactive = isatty(STDIN_FILENO);
+
+	/* Display prompt if in interactive mode */
+	if (is_interactive)
+		write(STDOUT_FILENO, "> ", 2);
+
+	while ((read_len = getline(&line, &len, stdin)) != -1)
+	{
+		/* Remove newline if present */
+		if (read_len > 0 && line[read_len - 1] == '\n')
+			line[read_len - 1] = '\0';
+
+		/* Check if line matches delimiter exactly */
+		if (strcmp(line, delimiter) == 0)
+			break;
+
+		/* Write the line to the pipe with a newline */
+		write(pipefd[1], line, strlen(line));
+		write(pipefd[1], "\n", 1);
+
+		/* Display prompt for next line if in interactive mode */
+		if (is_interactive)
+			write(STDOUT_FILENO, "> ", 2);
+	}
+
+	/* Clean up */
+	free(line);
+	return (0);
+}
+
+/**
  * setup_redirections - Configure input and output redirections
  * @tokens: The array of tokens
  * @idx: Current position in the token array
@@ -119,9 +161,6 @@ static int setup_redirections(char ***tokens, int idx, int saved_fds[2], char *p
 			if (is_heredoc)
 			{
 				char *delimiter = tokens[i + 1][0];
-				char *line = NULL;
-				size_t len = 0;
-				ssize_t read;
 				int pipefd[2];
 
 				/* Create a pipe */
@@ -140,31 +179,13 @@ static int setup_redirections(char ***tokens, int idx, int saved_fds[2], char *p
 					return (-1);
 				}
 
-				/* Display prompt and read lines until delimiter is found */
-				if (isatty(STDIN_FILENO))
-					write(STDOUT_FILENO, "> ", 2);
-
-				while ((read = getline(&line, &len, stdin)) != -1)
+				/* Handle heredoc input */
+				if (handle_heredoc(delimiter, pipefd) == -1)
 				{
-					/* Remove newline */
-					if (read > 0 && line[read - 1] == '\n')
-						line[read - 1] = '\0';
-
-					/* Check if line matches delimiter exactly (no substring comparison) */
-					if (_strcmp(line, delimiter) == 0)
-						break;
-
-					/* Write the line to the pipe with a newline */
-					write(pipefd[1], line, _strlen(line));
-					write(pipefd[1], "\n", 1);
-
-					/* Display prompt for next line if interactive */
-					if (isatty(STDIN_FILENO))
-						write(STDOUT_FILENO, "> ", 2);
+					close(pipefd[0]);
+					close(pipefd[1]);
+					return (-1);
 				}
-
-				/* Clean up */
-				free(line);
 
 				/* Connect pipe to stdin */
 				dup2(pipefd[0], STDIN_FILENO);
@@ -237,29 +258,30 @@ static int execute_command(char ***tokens, char *program_name, int line_count)
 		{
 			int exit_result = handle_builtin(tokens[0], &status, program_name, line_count);
 			if (exit_result == -1)
-				exit(status); /* Terminate immediately with the exit status */
-			return (status);
+				return (status); /* Return with the exit status */
 		}
 
-		/* Then check if it's any other builtin command without pipes */
-		int j, has_pipe = 0;
+		/* Then check if it's any other builtin command without pipes or redirections */
+		int j, has_pipe = 0, has_redir = 0;
 		for (j = 0; tokens[j] != NULL; j++)
 		{
-			if (tokens[j][0] && _strcmp(tokens[j][0], "|") == 0)
+			if (tokens[j][0])
 			{
-				has_pipe = 1;
-				break;
+				if (_strcmp(tokens[j][0], "|") == 0)
+					has_pipe = 1;
+				else if (_strchr("><", tokens[j][0][0]) != NULL)
+					has_redir = 1;
 			}
 		}
 
-		/* Execute builtin directly if no pipes are present */
-		if (!has_pipe)
+		/* Execute builtin directly if no pipes or redirections are present */
+		if (!has_pipe && !has_redir)
 		{
 			int builtin_result = handle_builtin(tokens[0], &status, program_name, line_count);
 			if (builtin_result == 1)
 				return (status); /* Builtin executed successfully */
 			else if (builtin_result == -1)
-				exit(status); /* Exit requested */
+				return (status); /* Exit requested */
 		}
 	}
 
@@ -345,7 +367,7 @@ static int execute_command(char ***tokens, char *program_name, int line_count)
 				close(pipe_fds[curr_pipe][1]);
 			}
 
-			/* Set up redirections */
+			/* Set up redirections - must be done before trying to read input in builtin or exec */
 			if (setup_redirections(tokens, i + 1, saved_fds, program_name, line_count) == -1)
 				exit(1);
 

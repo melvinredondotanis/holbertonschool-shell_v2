@@ -69,6 +69,34 @@ int main(int argc, char **argv)
 		return (status);
 	}
 
+	/* Handle non-interactive mode with stdin input */
+	if (!isatty(STDIN_FILENO))
+	{
+		char *buffer = NULL;
+		size_t buffer_size = 0;
+		ssize_t read_bytes;
+
+		/* Read first line which should contain our command */
+		read_bytes = getline(&buffer, &buffer_size, stdin);
+		if (read_bytes > 0)
+		{
+			/* Remove newline if present */
+			if (buffer[read_bytes - 1] == '\n')
+				buffer[read_bytes - 1] = '\0';
+
+			/* Process the command */
+			tokens = tokenize_command(buffer);
+			if (tokens)
+			{
+				status = interpret_tokens(tokens, argv[0], 0);
+				free_tokens(tokens);
+			}
+		}
+		free(buffer);
+		free_prompt(prompt);
+		return (status);
+	}
+
 	/* Interactive shell mode */
 	while (get_prompt(prompt) != -1)
 	{
