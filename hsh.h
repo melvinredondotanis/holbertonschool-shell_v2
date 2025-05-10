@@ -59,5 +59,6 @@ char		*_getenv(const char *name);
 int			_setenv(const char *name, const char *value);
 char		*_strcat(char *dest, const char *src);
 int			_putenv(char *string);
+char		*_strcpy(char *dest, const char *src);
 
 #endif /* HSH_H */

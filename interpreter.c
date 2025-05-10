@@ -53,7 +53,7 @@ static char *find_command_path(char *command)
 		}
 
 		/* Build the full path */
-		strcpy(file_path, path_token);
+		_strcpy(file_path, path_token);
 		_strcat(file_path, "/");
 		_strcat(file_path, command);
 

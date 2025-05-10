@@ -36,7 +36,7 @@ int _putenv(char *string)
 	if (!new_var)
 		return (-1);
 
-	strcpy(new_var, name);
+	_strcpy(new_var, name);
 	_strcat(new_var, "=");
 	_strcat(new_var, value);
 

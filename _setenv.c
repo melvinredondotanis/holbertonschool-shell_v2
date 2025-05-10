@@ -19,7 +19,7 @@ int _setenv(const char *name, const char *value)
 		return (-1);
 	}
 
-	strcpy(new_var, name);
+	_strcpy(new_var, name);
 	_strcat(new_var, "=");
 	_strcat(new_var, value);
 
