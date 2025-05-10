@@ -340,6 +340,7 @@ static int execute_command(char ***tokens, char *program_name, int line_count)
 		{
 			dup2(saved_fds[j], j);
 			close(saved_fds[j]);
+			saved_fds[j] = -1;
 		}
 
 	return (WIFEXITED(status) ? WEXITSTATUS(status) : 1);

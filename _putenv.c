@@ -70,9 +70,27 @@ int _putenv(char *string)
 
 	/* Avoid memory leaks by keeping track of allocated environment */
 	static char **old_environ = ((void *) 0);
+	static char **old_vars = ((void *) 0);
+	static int old_var_count;
 
 	if (old_environ != NULL && old_environ != environ)
+	{
 		free(old_environ);
+		/* Also free any variables we've allocated previously that aren't in new_environ */
+		for (j = 0; j < old_var_count; j++)
+			if (old_vars[j] != NULL)
+				free(old_vars[j]);
+		free(old_vars);
+		old_var_count = 0;
+	}
+
+	/* Keep track of allocated variables for later cleanup */
+	old_vars = malloc(sizeof(char *));
+	if (old_vars)
+	{
+		old_vars[0] = new_var;
+		old_var_count = 1;
+	}
 
 	old_environ = new_environ;
 	environ = new_environ;
