@@ -13,7 +13,7 @@ static int _strspn(const char *str1, const char *str2)
 {
 	int count = 0;
 
-	while (*str1 && strchr(str2, *str1))
+	while (*str1 && _strchr(str2, *str1))
 	{
 		count++;
 		str1++;
@@ -34,7 +34,7 @@ static int _strcspn(const char *str1, const char *str2)
 {
 	int count = 0;
 
-	while (*str1 && !strchr(str2, *str1))
+	while (*str1 && !_strchr(str2, *str1))
 	{
 		count++;
 		str1++;

@@ -17,10 +17,12 @@ prompt_t *init_prompt(void)
 {
 	prompt_t *prmt;
 
+	/* Allocate memory for the prompt structure */
 	prmt = malloc(sizeof(prompt_t));
 	if (!prmt)
 		return (NULL);
 
+	/* Initialize all fields to default values */
 	prmt->input = NULL;
 	prmt->size = 0;
 	prmt->line_count = 0;
@@ -45,6 +47,10 @@ prompt_t *init_prompt(void)
 void *free_prompt(void *prmt)
 {
 	prompt_t *p;
+
+	/* Check for NULL pointer */
+	if (!prmt)
+		return (NULL);
 
 	p = (prompt_t *)prmt;
 	if (p->input)
@@ -73,6 +79,10 @@ int get_prompt(prompt_t *prmt)
 	size_t bufsize;
 	ssize_t characters;
 
+	/* Validate input parameter */
+	if (!prmt)
+		return (-1);
+
 	bufsize = 0;
 	if (prmt->input)
 	{
@@ -80,16 +90,30 @@ int get_prompt(prompt_t *prmt)
 		prmt->input = NULL;
 	}
 
+	/* Display prompt if in interactive mode */
 	if (isatty(STDIN_FILENO))
-		write(STDOUT_FILENO, "$ ", 2);
+		write(STDOUT_FILENO, "($) ", 4);
+
+	/* Get input line from user */
 	characters = getline(&(prmt->input), &bufsize, stdin);
 
+	/* Check for EOF or error */
 	if (characters == -1)
+	{
+		/* Clean up on error */
+		if (prmt->input)
+		{
+			free(prmt->input);
+			prmt->input = NULL;
+		}
 		return (-1);
+	}
 
+	/* Remove trailing newline if present */
 	if (characters > 0 && prmt->input[characters - 1] == '\n')
 		prmt->input[characters - 1] = '\0';
 
-	prmt->size = strlen(prmt->input);
+	prmt->size = _strlen(prmt->input);
+	prmt->line_count++;
 	return (0);
 }

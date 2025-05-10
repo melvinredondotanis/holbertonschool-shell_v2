@@ -4,15 +4,17 @@
  * builtin_exit - Handle the exit built-in command
  * @args: Arguments passed to the exit command
  * @status: Pointer to the current status (to be updated)
+ * @program_name: Name of the shell program
+ * @line_count: Current line count for error messages
  *
  * Examples:
  *   exit       - Exits with current status
  *   exit 42    - Exits with status 42
  *   exit abc   - Prints error and sets status to 2
  *
- * Return: 1 to indicate the shell should exit, 0 otherwise
+ * Return: -1 to indicate the shell should exit, 0 otherwise
  */
-static int builtin_exit(char **args, int *status)
+static int builtin_exit(char **args, int *status, char *program_name, int line_count)
 {
 	int exit_status = *status;
 	long val;
@@ -24,7 +26,8 @@ static int builtin_exit(char **args, int *status)
 
 		if (*endptr != '\0' || val < 0)
 		{
-			fprintf(stderr, "exit: %s: necessary numerical argument\n", args[1]);
+			fprintf(stderr, "%s: %d: exit: Illegal number: %s\n",
+					program_name, line_count, args[1]);
 			*status = 2;
 			return (0);
 		}
@@ -35,12 +38,14 @@ static int builtin_exit(char **args, int *status)
 	if (isatty(STDIN_FILENO))
 		printf("exit\n");
 
-	return (1);
+	return (-1);
 }
 
 /**
  * builtin_cd - Handle the cd built-in command
  * @args: Arguments passed to the cd command
+ * @program_name: Name of the shell program
+ * @line_count: Current line count for error messages
  *
  * Examples:
  *   cd         - Changes to HOME directory
@@ -50,7 +55,7 @@ static int builtin_exit(char **args, int *status)
  *
  * Return: 0 on success, -1 on failure
  */
-static int builtin_cd(char **args)
+static int builtin_cd(char **args, char *program_name, int line_count)
 {
 	char cwd[PATH_MAX];
 	char *dir = NULL;
@@ -69,7 +74,8 @@ static int builtin_cd(char **args)
 		dir = getenv("HOME");
 		if (!dir)
 		{
-			fprintf(stderr, "cd: HOME not set\n");
+			fprintf(stderr, "%s: %d: cd: HOME not set\n",
+					program_name, line_count);
 			return (-1);
 		}
 	}
@@ -78,7 +84,8 @@ static int builtin_cd(char **args)
 		dir = getenv("OLDPWD");
 		if (!dir)
 		{
-			fprintf(stderr, "cd: OLDPWD not set\n");
+			fprintf(stderr, "%s: %d: cd: OLDPWD not set\n",
+					program_name, line_count);
 			return (-1);
 		}
 		printf("%s\n", dir);
@@ -97,7 +104,8 @@ static int builtin_cd(char **args)
 	/* Change directory */
 	if (chdir(dir) == -1)
 	{
-		fprintf(stderr, "cd: can't cd to %s\n", dir);
+		fprintf(stderr, "%s: %d: cd: can't cd to %s\n",
+			program_name, line_count, dir);
 		free(oldpwd);
 		return (-1);
 	}
@@ -111,14 +119,20 @@ static int builtin_cd(char **args)
 	}
 
 	/* Update environment variables */
-	if (_setenv("OLDPWD", oldpwd, 1) == -1 || _setenv("PWD", cwd, 1) == -1)
+	if (setenv("OLDPWD", oldpwd, 1) == -1)
 	{
-		perror("_setenv");
+		perror("setenv");
 		free(oldpwd);
 		return (-1);
 	}
-
 	free(oldpwd);
+
+	if (setenv("PWD", cwd, 1) == -1)
+	{
+		perror("setenv");
+		return (-1);
+	}
+
 	return (0);
 }
 
@@ -144,6 +158,8 @@ static int builtin_env(void)
  * handle_builtin - Check if command is a built-in and execute it
  * @args: Command and its arguments
  * @status: Pointer to the shell status
+ * @program_name: Name of the shell program
+ * @line_count: Current line count for error messages
  *
  * Examples:
  *   args={"exit", NULL}                - Exits shell
@@ -152,20 +168,20 @@ static int builtin_env(void)
  *
  * Return: 1 if a built-in was executed, 0 otherwise, -1 on exit
  */
-int handle_builtin(char **args, int *status)
+int handle_builtin(char **args, int *status, char *program_name, int line_count)
 {
 	if (!args || !args[0])
 		return (0);
 
 	if (_strcmp(args[0], "exit") == 0)
 	{
-		if (builtin_exit(args, status))
+		if (builtin_exit(args, status, program_name, line_count) == -1)
 			return (-1);
 		return (1);
 	}
 	else if (_strcmp(args[0], "cd") == 0)
 	{
-		*status = builtin_cd(args) == 0 ? 0 : 1;
+		*status = builtin_cd(args, program_name, line_count) == 0 ? 0 : 1;
 		return (1);
 	}
 	else if (_strcmp(args[0], "env") == 0)

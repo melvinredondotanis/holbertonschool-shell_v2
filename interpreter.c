@@ -126,14 +126,25 @@ static int setup_redirections(char ***tokens, int idx, int saved_fds[2])
  * execute_command - Execute commands with or without pipeline
  * @tokens: The array of tokenized commands
  * @program_name: Name of the shell program
+ * @line_count: Current line count for error messages
+ *
  * Return: Exit status of the last command
  */
-static int execute_command(char ***tokens, char *program_name)
+static int execute_command(char ***tokens, char *program_name, int line_count)
 {
 	int i = 0, status = 0;
 	int pipe_fds[2][2], curr_pipe = 0;
 	int saved_fds[2] = {-1, -1};
 	pid_t pid;
+
+	/* Check for builtin exit command at the beginning */
+	if (tokens[0] && tokens[0][0] && _strcmp(tokens[0][0], "exit") == 0)
+	{
+		int exit_result = handle_builtin(tokens[0], &status, program_name, line_count);
+		if (exit_result == -1)
+			exit(status); /* Terminate immediately with the exit status */
+		return (status);
+	}
 
 	while (tokens[i] != NULL)
 	{
@@ -145,9 +156,36 @@ static int execute_command(char ***tokens, char *program_name)
 			continue;
 		}
 
+		 /* Handle builtin commands without forking if not in a pipeline */
+		int j, has_pipe = 0;
+		for (j = 0; tokens[j] != NULL; j++)
+		{
+			if (tokens[j][0] && _strcmp(tokens[j][0], "|") == 0)
+			{
+				has_pipe = 1;
+				break;
+			}
+		}
+
+		if (!has_pipe && tokens[i][0])
+		{
+			/* Try executing builtin directly */
+			int builtin_result = handle_builtin(tokens[i], &status, program_name, line_count);
+			if (builtin_result == 1)
+			{
+				/* Builtin executed successfully */
+				return (status);
+			}
+			else if (builtin_result == -1)
+			{
+				/* Exit requested */
+				exit(status);
+			}
+		}
+
 		/* Check for pipe after current command */
 		int has_next_pipe = 0;
-		for (int j = i + 1; tokens[j] != NULL; j++)
+		for (j = i + 1; tokens[j] != NULL; j++)
 		{
 			if (tokens[j][0] && _strcmp(tokens[j][0], "|") == 0)
 			{
@@ -159,7 +197,7 @@ static int execute_command(char ***tokens, char *program_name)
 				}
 				break;
 			}
-			if (tokens[j][0] && !strchr("<>", tokens[j][0][0]) && tokens[j][0][0] != '\0')
+			if (tokens[j][0] && !_strchr("<>", tokens[j][0][0]) && tokens[j][0][0] != '\0')
 				break;
 		}
 
@@ -195,14 +233,16 @@ static int execute_command(char ***tokens, char *program_name)
 				exit(1);
 
 			/* Try builtin commands */
-			if (handle_builtin(tokens[i], &status) != 0)
+			if (handle_builtin(tokens[i], &status, program_name, line_count) != 0)
 				exit(status);
 
 			/* Execute external command */
 			command_path = find_command_path(tokens[i][0]);
 			if (!command_path)
 			{
-				fprintf(stderr, "%s: command not found: %s\n", program_name, tokens[i][0]);
+				fprintf(stderr, "%s: %d: %s: not found\n", program_name, line_count, tokens[i][0]);
+				free(command_path);
+				free_tokens(tokens);
 				exit(127);
 			}
 			execve(command_path, tokens[i], environ);
@@ -261,11 +301,13 @@ static int execute_command(char ***tokens, char *program_name)
  * interpret_tokens - Interpret tokenized commands
  * @tokens: The array of tokenized commands
  * @program_name: Name of the shell program
+ * @line_count: Current line count for error messages
+ *
  * Return: Exit status of the command
  */
-int interpret_tokens(char ***tokens, char *program_name)
+int interpret_tokens(char ***tokens, char *program_name, int line_count)
 {
 	if (!tokens || !tokens[0] || !tokens[0][0])
 		return (0);
-	return (execute_command(tokens, program_name));
+	return (execute_command(tokens, program_name, line_count));
 }

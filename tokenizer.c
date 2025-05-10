@@ -8,19 +8,22 @@
  *   If tokens = [["ls", "-l", NULL], ["|", NULL], ["grep", "file", NULL], NULL]
  *   All memory for this structure will be freed
  */
-static void free_tokens(char ***tokens)
+void free_tokens(char ***tokens)
 {
-	int i, j;
+	int i = 0, j;
 
 	if (!tokens)
 		return;
 
-	for (i = 0; tokens[i] != NULL; i++)
+	for (; tokens[i] != NULL; i++)
 	{
+		/* Free each token string in the current command */
 		for (j = 0; tokens[i][j] != NULL; j++)
 			free(tokens[i][j]);
+		/* Free the current command array */
 		free(tokens[i]);
 	}
+	/* Free the main tokens array */
 	free(tokens);
 }
 
@@ -36,11 +39,15 @@ static void free_tokens(char ***tokens)
  */
 static char **tokenize_args(char *command)
 {
-	char **args;
-	char *token, *str, *saveptr;
-	int i, j;
+	char **args, *token, *str, *saveptr;
+	int i = 0, j;
 
-	args = malloc(sizeof(char *) * 64);
+	/* Check for NULL input */
+	if (!command)
+		return (NULL);
+
+	/* Allocate memory for arguments array and duplicate command string */
+	args = malloc(sizeof(char *) * MAX_TOKENS);
 	str = _strdup(command);
 	if (!args || !str)
 	{
@@ -49,13 +56,14 @@ static char **tokenize_args(char *command)
 		return (NULL);
 	}
 
-	i = 0;
-	token = _strtok_r(str, " ", &saveptr);
-	while (token != NULL)
+	token = _strtok_r(str, " \t", &saveptr);
+	while (token != NULL && i < MAX_TOKENS - 1)
 	{
+		/* Duplicate each token and store in args array */
 		args[i] = _strdup(token);
 		if (!args[i])
 		{
+			/* Clean up if duplication fails */
 			free(str);
 			for (j = 0; j < i; j++)
 				free(args[j]);
@@ -63,8 +71,9 @@ static char **tokenize_args(char *command)
 			return (NULL);
 		}
 		i++;
-		token = _strtok_r(NULL, " ", &saveptr);
+		token = _strtok_r(NULL, " \t", &saveptr);
 	}
+	/* Terminate args array with NULL */
 	args[i] = NULL;
 	free(str);
 	return (args);
@@ -87,14 +96,21 @@ static int handle_operator(char ***commands, int idx, char op_char, int is_doubl
 {
 	char op[3];
 
+	/* Validate input parameters */
+	if (!commands || idx < 0 || idx >= MAX_TOKENS - 1)
+		return (0);
+
+	/* Create operator string (single or double character) */
 	op[0] = op_char;
 	op[1] = is_double ? op_char : '\0';
 	op[2] = '\0';
 
+	/* Allocate memory for operator command array */
 	commands[idx] = malloc(sizeof(char *) * 2);
 	if (!commands[idx])
 		return (0);
 
+	/* Copy operator string and set NULL terminator */
 	commands[idx][0] = _strdup(op);
 	if (!commands[idx][0])
 	{
@@ -118,14 +134,16 @@ static int handle_operator(char ***commands, int idx, char op_char, int is_doubl
  */
 char ***tokenize_command(char *input)
 {
-	char *input_copy;
-	int i, j, start;
-	char ***commands;
-	char tmp;
-	int is_double;
+	char *input_copy, ***commands, tmp;
+	int i = 0, j = 0, start, is_double;
 
+	/* Check for NULL input */
+	if (!input)
+		return (NULL);
+
+	/* Create a copy of input and allocate memory for commands array */
 	input_copy = _strdup(input);
-	commands = malloc(sizeof(char **) * 64);
+	commands = malloc(sizeof(char **) * MAX_TOKENS);
 	if (!commands || !input_copy)
 	{
 		free(input_copy);
@@ -133,12 +151,10 @@ char ***tokenize_command(char *input)
 		return (NULL);
 	}
 
-	i = 0;
-	j = 0;
-	while (input_copy[j] != '\0')
+	while (input_copy[j] != '\0' && i < MAX_TOKENS - 1)
 	{
 		/* Skip spaces */
-		while (input_copy[j] == ' ')
+		while (input_copy[j] == ' ' || input_copy[j] == '\t')
 			j++;
 		if (input_copy[j] == '\0')
 			break;
@@ -162,26 +178,32 @@ char ***tokenize_command(char *input)
 		else
 		{
 			start = j;
+			/* Find the end of the current command (until next operator or end of string) */
 			while (input_copy[j] != '\0' &&
 				   input_copy[j] != '|' &&
 				   input_copy[j] != '>' &&
 				   input_copy[j] != '<')
 				j++;
 
+			/* Temporarily null-terminate the command string */
 			tmp = input_copy[j];
 			input_copy[j] = '\0';
 
+			/* Process current command segment with tokenize_args */
 			commands[i] = tokenize_args(&input_copy[start]);
 			if (!commands[i])
 			{
+				/* Clean up on failure */
 				free_tokens(commands);
 				free(input_copy);
 				return (NULL);
 			}
 			i++;
+			/* Restore the original character */
 			input_copy[j] = tmp;
 		}
 	}
+	/* Set NULL terminator for commands array */
 	commands[i] = NULL;
 	free(input_copy);
 	return (commands);

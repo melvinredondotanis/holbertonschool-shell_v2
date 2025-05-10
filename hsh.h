@@ -4,17 +4,17 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <stdbool.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <stddef.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #define PATH_MAX 4096
+#define MAX_TOKENS 64
 
 extern char **environ;
 
@@ -38,12 +38,13 @@ int			get_prompt(prompt_t *prompt);
 
 /* Tokenizer */
 char		***tokenize_command(char *input);
+void		free_tokens(char ***tokens);
 
 /* Interpreter */
-int			interpret_tokens(char ***tokens, char *program_name);
+int			interpret_tokens(char ***tokens, char *program_name, int line_count);
 
 /* Builtins */
-int			handle_builtin(char **args, int *status);
+int			handle_builtin(char **args, int *status, char *program_name, int line_count);
 
 /* Prohibited functions */
 long		_strtol(const char *str, char **endptr, int base);
@@ -53,6 +54,6 @@ char		*_strdup(char *str);
 int			_strcmp(const char *str1, const char *str2);
 int			_strncmp(const char *str1, const char *str2, size_t n);
 char		*_strchr(const char *s, int c);
-int			_setenv(const char *name, const char *value, int overwrite);
+int			_isspace(int c);
 
 #endif /* HSH_H */
