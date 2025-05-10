@@ -16,6 +16,7 @@ static char *find_command_path(char *command)
 	int command_len, dir_len;
 	struct stat buffer;
 
+	/* Validate command input */
 	if (!command || !*command)
 		return (NULL);
 
@@ -27,37 +28,48 @@ static char *find_command_path(char *command)
 		return (NULL);
 	}
 
+	/* Get PATH environment variable */
 	path_env = getenv("PATH");
 	if (!path_env)
 		return (NULL);
 
+	/* Create a copy to tokenize safely */
 	path_copy = _strdup(path_env);
 	if (!path_copy)
 		return (NULL);
 
+	/* Search in each directory in PATH */
 	command_len = _strlen(command);
 	path_token = strtok(path_copy, ":");
 	while (path_token)
 	{
+		/* Allocate memory for the full path */
 		dir_len = _strlen(path_token);
 		file_path = malloc(dir_len + command_len + 2); /* +2 for '/' and '\0' */
 		if (!file_path)
 		{
 			free(path_copy);
 			return (NULL);
-		}
+			}
+
+		/* Build the full path */
 		strcpy(file_path, path_token);
 		strcat(file_path, "/");
 		strcat(file_path, command);
 
+		/* Check if file exists and is executable */
 		if (stat(file_path, &buffer) == 0 && (buffer.st_mode & S_IXUSR))
 		{
 			free(path_copy);
 			return (file_path);
 		}
+
+		/* Try next directory */
 		free(file_path);
 		path_token = strtok(NULL, ":");
 	}
+
+	/* Command not found in any PATH directory */
 	free(path_copy);
 	return (NULL);
 }
@@ -72,6 +84,10 @@ static char *find_command_path(char *command)
 static int setup_redirections(char ***tokens, int idx, int saved_fds[2])
 {
 	int fd, i = idx;
+
+	/* Initialize saved file descriptors as -1 (unset) */
+	saved_fds[0] = -1;
+	saved_fds[1] = -1;
 
 	while (tokens[i] != NULL)
 	{
@@ -137,13 +153,38 @@ static int execute_command(char ***tokens, char *program_name, int line_count)
 	int saved_fds[2] = {-1, -1};
 	pid_t pid;
 
-	/* Check for builtin exit command at the beginning */
-	if (tokens[0] && tokens[0][0] && _strcmp(tokens[0][0], "exit") == 0)
+	/* Check for builtin exit command at the beginning to avoid unnecessary fork */
+	if (tokens[0] && tokens[0][0])
 	{
-		int exit_result = handle_builtin(tokens[0], &status, program_name, line_count);
-		if (exit_result == -1)
-			exit(status); /* Terminate immediately with the exit status */
-		return (status);
+		/* First check if it's the exit command to handle it specially */
+		if (_strcmp(tokens[0][0], "exit") == 0)
+		{
+			int exit_result = handle_builtin(tokens[0], &status, program_name, line_count);
+			if (exit_result == -1)
+				exit(status); /* Terminate immediately with the exit status */
+			return (status);
+		}
+
+		/* Then check if it's any other builtin command without pipes */
+		int j, has_pipe = 0;
+		for (j = 0; tokens[j] != NULL; j++)
+		{
+			if (tokens[j][0] && _strcmp(tokens[j][0], "|") == 0)
+			{
+				has_pipe = 1;
+				break;
+			}
+		}
+
+		/* Execute builtin directly if no pipes are present */
+		if (!has_pipe)
+		{
+			int builtin_result = handle_builtin(tokens[0], &status, program_name, line_count);
+			if (builtin_result == 1)
+				return (status); /* Builtin executed successfully */
+			else if (builtin_result == -1)
+				exit(status); /* Exit requested */
+		}
 	}
 
 	while (tokens[i] != NULL)
