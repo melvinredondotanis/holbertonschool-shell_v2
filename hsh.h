@@ -45,9 +45,11 @@ int			interpret_tokens(char ***tokens, char *program_name, int line_count);
 
 /* Builtins */
 int			handle_builtin(char **args, int *status, char *program_name, int line_count);
+int			builtin_setenv(char **args, char *program_name, int line_count);
+int			builtin_unsetenv(char **args, char *program_name, int line_count);
 
 /* Prohibited functions */
-long		_strtol(const char *str, char **endptr, int base);
+long _strtol(const char *str, char **endptr, int base);
 char		*_strtok_r(char *str, const char *delim, char **saveptr);
 int			_strlen(const char *str);
 char		*_strdup(char *str);
@@ -58,6 +60,7 @@ int			_isspace(int c);
 char		*_getenv(const char *name);
 int			_setenv(const char *name, const char *value);
 char		*_strcat(char *dest, const char *src);
+int			_setenv(const char *name, const char *value);
 int			_putenv(char *string);
 char		*_strcpy(char *dest, const char *src);
 

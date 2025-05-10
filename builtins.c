@@ -189,6 +189,16 @@ int handle_builtin(char **args, int *status, char *program_name, int line_count)
 		*status = builtin_env();
 		return (1);
 	}
+	else if (_strcmp(args[0], "setenv") == 0)
+	{
+		*status = builtin_setenv(args, program_name, line_count) == 0 ? 0 : 1;
+		return (1);
+	}
+	else if (_strcmp(args[0], "unsetenv") == 0)
+	{
+		*status = builtin_unsetenv(args, program_name, line_count) == 0 ? 0 : 1;
+		return (1);
+	}
 
 	return (0);
 }
