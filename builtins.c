@@ -24,7 +24,7 @@ static int builtin_exit(char **args, int *status, char *program_name, int line_c
 	{
 		val = _strtol(args[1], &endptr, 10);
 
-		if (*endptr != '\0' || val < 0 || (val == 0 && strcmp(args[1], "0") != 0 && strcmp(args[1], "+0") != 0))
+		if (*endptr != '\0' || val < 0)
 		{
 			fprintf(stderr, "%s: %d: exit: Illegal number: %s\n",
 					program_name, line_count, args[1]);
@@ -89,13 +89,9 @@ static int builtin_cd(char **args, char *program_name, int line_count)
 			return (-1);
 		}
 		printf("%s\n", dir);
-		target_arg = "-";
 	}
 	else
-	{
 		dir = args[1];
-		target_arg = args[1];
-	}
 
 	/* Save old path to set OLDPWD later */
 	oldpwd = _strdup(cwd);
@@ -109,7 +105,7 @@ static int builtin_cd(char **args, char *program_name, int line_count)
 	if (chdir(dir) == -1)
 	{
 		fprintf(stderr, "%s: %d: cd: can't cd to %s\n",
-			program_name, line_count, dir);
+				program_name, line_count, dir);
 		free(oldpwd);
 		return (-1);
 	}
