@@ -29,7 +29,7 @@ static char *find_command_path(char *command)
 	}
 
 	/* Get PATH environment variable */
-	path_env = getenv("PATH");
+	path_env = _getenv("PATH");
 	if (!path_env)
 		return (NULL);
 

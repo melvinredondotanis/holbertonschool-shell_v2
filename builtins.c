@@ -71,7 +71,7 @@ static int builtin_cd(char **args, char *program_name, int line_count)
 	/* Determine target directory */
 	if (!args[1] || _strcmp(args[1], "~") == 0)
 	{
-		dir = getenv("HOME");
+		dir = _getenv("HOME");
 		if (!dir)
 		{
 			fprintf(stderr, "%s: %d: cd: HOME not set\n",
@@ -81,7 +81,7 @@ static int builtin_cd(char **args, char *program_name, int line_count)
 	}
 	else if (_strcmp(args[1], "-") == 0)
 	{
-		dir = getenv("OLDPWD");
+		dir = _getenv("OLDPWD");
 		if (!dir)
 		{
 			fprintf(stderr, "%s: %d: cd: OLDPWD not set\n",
@@ -119,17 +119,17 @@ static int builtin_cd(char **args, char *program_name, int line_count)
 	}
 
 	/* Update environment variables */
-	if (setenv("OLDPWD", oldpwd, 1) == -1)
+	if (_setenv("OLDPWD", oldpwd) == -1)
 	{
-		perror("setenv");
+		perror("_setenv");
 		free(oldpwd);
 		return (-1);
 	}
 	free(oldpwd);
 
-	if (setenv("PWD", cwd, 1) == -1)
+	if (_setenv("PWD", cwd) == -1)
 	{
-		perror("setenv");
+		perror("_setenv");
 		return (-1);
 	}
 
