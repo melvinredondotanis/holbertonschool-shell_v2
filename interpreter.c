@@ -107,43 +107,105 @@ static int setup_redirections(char ***tokens, int idx, int saved_fds[2], char *p
 		{
 			int is_input = (tokens[i][0][0] == '<');
 			int is_append = (_strcmp(tokens[i][0], ">>") == 0);
+			int is_heredoc = (_strcmp(tokens[i][0], "<<") == 0);
 			int target_fd = is_input ? STDIN_FILENO : STDOUT_FILENO;
 			int flags;
 
-			/* Check if filename exists */
+			/* Check if filename/delimiter exists */
 			if (!tokens[i + 1] || !tokens[i + 1][0])
 				return (-1);
 
-			/* Set file open flags */
-			if (is_input)
-				flags = O_RDONLY;
+			/* Handle heredoc (<<) */
+			if (is_heredoc)
+			{
+				char *delimiter = tokens[i + 1][0];
+				char *line = NULL;
+				size_t len = 0;
+				ssize_t read;
+				int pipefd[2];
+
+				/* Create a pipe */
+				if (pipe(pipefd) == -1)
+				{
+					perror("pipe");
+					return (-1);
+				}
+
+				/* Save original stdin */
+				saved_fds[0] = dup(STDIN_FILENO);
+				if (saved_fds[0] == -1)
+				{
+					close(pipefd[0]);
+					close(pipefd[1]);
+					return (-1);
+				}
+
+				/* Display prompt and read lines until delimiter is found */
+				if (isatty(STDIN_FILENO))
+					write(STDOUT_FILENO, "> ", 2);
+
+				while ((read = getline(&line, &len, stdin)) != -1)
+				{
+					/* Remove newline */
+					if (read > 0 && line[read - 1] == '\n')
+						line[read - 1] = '\0';
+
+					/* Check if line matches delimiter exactly (no substring comparison) */
+					if (_strcmp(line, delimiter) == 0)
+						break;
+
+					/* Write the line to the pipe with a newline */
+					write(pipefd[1], line, _strlen(line));
+					write(pipefd[1], "\n", 1);
+
+					/* Display prompt for next line if interactive */
+					if (isatty(STDIN_FILENO))
+						write(STDOUT_FILENO, "> ", 2);
+				}
+
+				/* Clean up */
+				free(line);
+
+				/* Connect pipe to stdin */
+				dup2(pipefd[0], STDIN_FILENO);
+				close(pipefd[0]);
+				close(pipefd[1]);
+
+				i += 2;
+			}
 			else
-				flags = O_WRONLY | O_CREAT | (is_append ? O_APPEND : O_TRUNC);
-
-			/* Open file */
-			fd = open(tokens[i + 1][0], flags, 0644);
-			if (fd == -1)
 			{
-				/* Print more specific error message */
-				if (is_input && access(tokens[i + 1][0], F_OK) == -1)
-					fprintf(stderr, "%s: %d: %s: No such file or directory\n", program_name, line_count, tokens[i + 1][0]);
-				else if (is_input)
-					fprintf(stderr, "%s: %d: %s: Permission denied\n", program_name, line_count, tokens[i + 1][0]);
+				/* Set file open flags */
+				if (is_input)
+					flags = O_RDONLY;
 				else
-					fprintf(stderr, "%s: %d: %s: Permission denied\n", program_name, line_count, tokens[i + 1][0]);
-				return (-1);
-			}
+					flags = O_WRONLY | O_CREAT | (is_append ? O_APPEND : O_TRUNC);
 
-			/* Save original fd and redirect */
-			saved_fds[is_input ? 0 : 1] = dup(target_fd);
-			if (saved_fds[is_input ? 0 : 1] == -1)
-			{
+				/* Open file */
+				fd = open(tokens[i + 1][0], flags, 0644);
+				if (fd == -1)
+				{
+					/* Print more specific error message */
+					if (is_input && access(tokens[i + 1][0], F_OK) == -1)
+						fprintf(stderr, "%s: %d: %s: No such file or directory\n", program_name, line_count, tokens[i + 1][0]);
+					else if (is_input)
+						fprintf(stderr, "%s: %d: %s: Permission denied\n", program_name, line_count, tokens[i + 1][0]);
+					else
+						fprintf(stderr, "%s: %d: %s: Permission denied\n", program_name, line_count, tokens[i + 1][0]);
+					return (-1);
+				}
+
+				/* Save original fd and redirect */
+				saved_fds[is_input ? 0 : 1] = dup(target_fd);
+				if (saved_fds[is_input ? 0 : 1] == -1)
+				{
+					close(fd);
+					return (-1);
+				}
+				dup2(fd, target_fd);
 				close(fd);
-				return (-1);
+				i += 2;
 			}
-			dup2(fd, target_fd);
-			close(fd);
-			i += 2;
 		}
 		/* Return index when pipe is found */
 		else if (tokens[i][0][0] == '|')
