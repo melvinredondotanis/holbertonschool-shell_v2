@@ -79,9 +79,12 @@ static char *find_command_path(char *command)
  * @tokens: The array of tokens
  * @idx: Current position in the token array
  * @saved_fds: Array to save original stdin (0) and stdout (1)
+ * @program_name: Name of the shell program
+ * @line_count: Current line count for error messages
+ *
  * Return: Index of the next command, or -1 on error
  */
-static int setup_redirections(char ***tokens, int idx, int saved_fds[2])
+static int setup_redirections(char ***tokens, int idx, int saved_fds[2], char *program_name, int line_count)
 {
 	int fd, i = idx;
 
@@ -121,7 +124,13 @@ static int setup_redirections(char ***tokens, int idx, int saved_fds[2])
 			fd = open(tokens[i + 1][0], flags, 0644);
 			if (fd == -1)
 			{
-				perror("open");
+				/* Print more specific error message */
+				if (is_input && access(tokens[i + 1][0], F_OK) == -1)
+					fprintf(stderr, "%s: %d: %s: No such file or directory\n", program_name, line_count, tokens[i + 1][0]);
+				else if (is_input)
+					fprintf(stderr, "%s: %d: %s: Permission denied\n", program_name, line_count, tokens[i + 1][0]);
+				else
+					fprintf(stderr, "%s: %d: %s: Permission denied\n", program_name, line_count, tokens[i + 1][0]);
 				return (-1);
 			}
 
@@ -129,7 +138,6 @@ static int setup_redirections(char ***tokens, int idx, int saved_fds[2])
 			saved_fds[is_input ? 0 : 1] = dup(target_fd);
 			if (saved_fds[is_input ? 0 : 1] == -1)
 			{
-				perror("dup");
 				close(fd);
 				return (-1);
 			}
@@ -276,7 +284,7 @@ static int execute_command(char ***tokens, char *program_name, int line_count)
 			}
 
 			/* Set up redirections */
-			if (setup_redirections(tokens, i + 1, saved_fds) == -1)
+			if (setup_redirections(tokens, i + 1, saved_fds, program_name, line_count) == -1)
 				exit(1);
 
 			/* Try builtin commands */

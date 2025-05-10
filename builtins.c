@@ -72,7 +72,7 @@ static int builtin_cd(char **args, char *program_name, int line_count)
 	if (!args[1] || _strcmp(args[1], "~") == 0)
 	{
 		dir = _getenv("HOME");
-		if (!dir)
+		if (!dir || dir[0] == '\0')
 		{
 			fprintf(stderr, "%s: %d: cd: HOME not set\n",
 					program_name, line_count);
@@ -82,7 +82,7 @@ static int builtin_cd(char **args, char *program_name, int line_count)
 	else if (_strcmp(args[1], "-") == 0)
 	{
 		dir = _getenv("OLDPWD");
-		if (!dir)
+		if (!dir || dir[0] == '\0')
 		{
 			fprintf(stderr, "%s: %d: cd: OLDPWD not set\n",
 					program_name, line_count);
