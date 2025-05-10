@@ -289,7 +289,7 @@ static int execute_command(char ***tokens, char *program_name, int line_count)
 	{
 		/* Skip empty commands and operators */
 		if (!tokens[i][0] || !tokens[i][0][0] ||
-			_strchr("<>|", tokens[i][0][0]))
+			_strchr("<>|;", tokens[i][0][0]))
 		{
 			i++;
 			continue;
@@ -448,7 +448,59 @@ static int execute_command(char ***tokens, char *program_name, int line_count)
  */
 int interpret_tokens(char ***tokens, char *program_name, int line_count)
 {
+	int i = 0, j, status = 0, semicolon_found;
+	char ***cmd_segment;
+
 	if (!tokens || !tokens[0] || !tokens[0][0])
 		return (0);
-	return (execute_command(tokens, program_name, line_count));
+
+	/* Check if there are any semicolons in the command */
+	semicolon_found = 0;
+	for (j = 0; tokens[j] != NULL; j++)
+	{
+		if (tokens[j][0] && _strcmp(tokens[j][0], ";") == 0)
+		{
+			semicolon_found = 1;
+			break;
+		}
+	}
+
+	/* If no semicolons, just execute the command as is */
+	if (!semicolon_found)
+		return (execute_command(tokens, program_name, line_count));
+
+	/* Handle multiple commands separated by semicolons */
+	while (tokens[i] != NULL)
+	{
+		j = i;
+		/* Find the next semicolon or the end of tokens */
+		while (tokens[j] != NULL &&
+			  (tokens[j][0] == NULL || _strcmp(tokens[j][0], ";") != 0))
+			j++;
+
+		/* Create a temporary array for the current command segment */
+		cmd_segment = malloc(sizeof(char **) * (j - i + 1));
+		if (!cmd_segment)
+			return (1);
+
+		/* Copy tokens for the current command segment */
+		int k;
+		for (k = 0; i + k < j; k++)
+			cmd_segment[k] = tokens[i + k];
+		cmd_segment[k] = NULL;
+
+		/* Execute the current command segment */
+		if (cmd_segment[0] != NULL && cmd_segment[0][0] != NULL)
+			status = execute_command(cmd_segment, program_name, line_count);
+
+		/* Free the temporary array (but not its contents) */
+		free(cmd_segment);
+
+		/* Skip the semicolon token */
+		i = j;
+		if (tokens[i] != NULL)
+			i++;
+	}
+
+	return (status);
 }

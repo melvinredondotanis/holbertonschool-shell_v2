@@ -160,7 +160,7 @@ char ***tokenize_command(char *input)
 			break;
 
 		/* Handle operators */
-		if (input_copy[j] == '|' || input_copy[j] == '>' || input_copy[j] == '<')
+		if (input_copy[j] == '|' || input_copy[j] == '>' || input_copy[j] == '<' || input_copy[j] == ';')
 		{
 			is_double = (input_copy[j] == '>' || input_copy[j] == '<') &&
 				input_copy[j + 1] == input_copy[j];
@@ -242,7 +242,8 @@ char ***tokenize_command(char *input)
 			while (input_copy[j] != '\0' &&
 				   input_copy[j] != '|' &&
 				   input_copy[j] != '>' &&
-				   input_copy[j] != '<')
+				   input_copy[j] != '<' &&
+				   input_copy[j] != ';')
 				j++;
 
 			/* Temporarily null-terminate the command string */
