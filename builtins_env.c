@@ -58,7 +58,7 @@ int builtin_setenv(char **args, char *program_name, int line_count)
  *
  * Return: 0 on success, -1 on failure
  */
-static int builtin_unsetenv(char **args, char *program_name, int line_count)
+int builtin_unsetenv(char **args, char *program_name, int line_count)
 {
 	char *name;
 	size_t name_len;
