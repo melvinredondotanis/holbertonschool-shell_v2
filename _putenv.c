@@ -1,5 +1,10 @@
 #include "hsh.h"
 
+/* Global variables to track allocations */
+static char **allocated_vars = NULL;
+static int alloc_count = 0;
+static char **old_environ = NULL;
+
 /**
  * _putenv - Set or update an environment variable
  * @string: Name of the environment variable.
@@ -20,7 +25,7 @@ int _putenv(char *string)
 	{
 		if (string[i] == '=')
 		{
-			string[i] = '\0';  /* Temporarily replace '=' with null terminator */
+			string[i] = '\0'; /* Temporarily replace '=' with null terminator */
 			value = &string[i + 1];
 			break;
 		}
@@ -39,6 +44,20 @@ int _putenv(char *string)
 	_strcpy(new_var, name);
 	_strcat(new_var, "=");
 	_strcat(new_var, value);
+
+	/* Restore the '=' in the original string */
+	if (value)
+		string[i] = '=';
+
+	/* Track this new allocation */
+	char **temp = realloc(allocated_vars, sizeof(char *) * (alloc_count + 1));
+	if (!temp)
+	{
+		free(new_var);
+		return (-1);
+	}
+	allocated_vars = temp;
+	allocated_vars[alloc_count++] = new_var;
 
 	/* Look for an existing variable with this name */
 	for (i = 0; environ[i]; i++)
@@ -68,32 +87,41 @@ int _putenv(char *string)
 	new_environ[i] = new_var;
 	new_environ[i + 1] = NULL;
 
-	/* Avoid memory leaks by keeping track of allocated environment */
-	static char **old_environ = ((void *) 0);
-	static char **old_vars = ((void *) 0);
-	static int old_var_count;
-
+	/* Keep track of this environment allocation */
 	if (old_environ != NULL && old_environ != environ)
-	{
 		free(old_environ);
-		/* Also free any variables we've allocated previously that aren't in new_environ */
-		for (j = 0; j < old_var_count; j++)
-			if (old_vars[j] != NULL)
-				free(old_vars[j]);
-		free(old_vars);
-		old_var_count = 0;
-	}
-
-	/* Keep track of allocated variables for later cleanup */
-	old_vars = malloc(sizeof(char *));
-	if (old_vars)
-	{
-		old_vars[0] = new_var;
-		old_var_count = 1;
-	}
 
 	old_environ = new_environ;
 	environ = new_environ;
 
 	return (0);
+}
+
+/**
+ * cleanup_environment - Free all allocated environment memory
+ * This function should be called before program exit
+ */
+void cleanup_environment(void)
+{
+	int i;
+
+	/* Free all allocated environment variable strings */
+	if (allocated_vars)
+	{
+		for (i = 0; i < alloc_count; i++)
+		{
+			if (allocated_vars[i])
+				free(allocated_vars[i]);
+		}
+		free(allocated_vars);
+		allocated_vars = NULL;
+		alloc_count = 0;
+	}
+
+	/* Free the environment array itself if we allocated it */
+	if (old_environ != NULL)
+	{
+		free(old_environ);
+		old_environ = NULL;
+	}
 }

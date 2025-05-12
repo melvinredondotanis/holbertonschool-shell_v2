@@ -92,6 +92,7 @@ int main(int argc, char **argv)
 		}
 		}
 		free(buffer);
+		cleanup_environment();
 		free_prompt(prompt);
 		return (status);
 	}
@@ -120,6 +121,7 @@ int main(int argc, char **argv)
 		write(STDOUT_FILENO, "\n", 1);
 
 	/* Clean up and return the status of the last command */
+	cleanup_environment();
 	free_prompt(prompt);
 	return (status);
 }

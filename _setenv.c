@@ -24,12 +24,11 @@ int _setenv(const char *name, const char *value)
 	_strcat(new_var, value);
 
 	result = _putenv(new_var);
+	free(new_var);
 	if (result != 0)
 	{
 		perror("_setenv");
-		free(new_var);
 		return (-1);
 	}
-	free(new_var);
 	return (0);
 }
