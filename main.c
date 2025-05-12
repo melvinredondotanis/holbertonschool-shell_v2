@@ -76,20 +76,24 @@ int main(int argc, char **argv)
 		size_t buffer_size = 0;
 		ssize_t read_bytes;
 
-		/* Read first line which should contain our command */
-		read_bytes = getline(&buffer, &buffer_size, stdin);
-		if (read_bytes > 0)
+		/* Read all commands from stdin */
+		while ((read_bytes = getline(&buffer, &buffer_size, stdin)) != -1)
 		{
 			/* Remove newline if present */
-			if (buffer[read_bytes - 1] == '\n')
+			if (read_bytes > 0 && buffer[read_bytes - 1] == '\n')
 				buffer[read_bytes - 1] = '\0';
-		/* Process the command */
-		tokens = tokenize_command(buffer);
-		if (tokens)
-		{
-			status = interpret_tokens(tokens, argv[0], 0);
-			free_tokens(tokens);
-		}
+
+			/* Skip empty lines or whitespace-only lines */
+			if (buffer[0] == '\0' || _is_whitespace_only(buffer))
+				continue;
+
+			/* Process the command */
+			tokens = tokenize_command(buffer);
+			if (tokens)
+			{
+				status = interpret_tokens(tokens, argv[0], 0);
+				free_tokens(tokens);
+			}
 		}
 		free(buffer);
 		cleanup_environment();
