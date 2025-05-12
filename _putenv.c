@@ -1,9 +1,9 @@
 #include "hsh.h"
 
 /* Global variables to track allocations */
-static char **allocated_vars = NULL;
-static int alloc_count = 0;
-static char **old_environ = NULL;
+static char **allocated_vars = ((void *)0);
+static int alloc_count;
+static char **old_environ = ((void *)0);
 
 /**
  * _putenv - Set or update an environment variable
@@ -50,7 +50,7 @@ int _putenv(char *string)
 		string[i] = '=';
 
 	/* Track this new allocation */
-	char **temp = realloc(allocated_vars, sizeof(char *) * (alloc_count + 1));
+	char **temp = _realloc(allocated_vars, sizeof(char *) * (alloc_count + 1));
 	if (!temp)
 	{
 		free(new_var);

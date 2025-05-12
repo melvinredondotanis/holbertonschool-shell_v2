@@ -64,5 +64,6 @@ int			_setenv(const char *name, const char *value);
 int			_putenv(char *string);
 void		cleanup_environment(void);
 char		*_strcpy(char *dest, const char *src);
+void		*_realloc(void *ptr, size_t size);
 
 #endif /* HSH_H */
