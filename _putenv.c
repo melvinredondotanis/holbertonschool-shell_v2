@@ -2,7 +2,7 @@
 
 /* Global variables to track allocations */
 static char **allocated_vars = ((void *)0);
-static int alloc_count;
+static int alloc_count = 0;
 static char **old_environ = ((void *)0);
 
 /**
